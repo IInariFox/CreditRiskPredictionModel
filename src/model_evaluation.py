@@ -1,31 +1,24 @@
 # src/model_evaluation.py
 
+from data_preprocessing import load_data, preprocess_data
 import joblib
-from data_preprocessing import load_data, preprocess_data, split_data
-from sklearn.metrics import classification_report, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-def evaluate_model(model, X_test, y_test, model_name):
-    y_pred = model.predict(X_test)
-    print(f"Classification Report for {model_name}:")
-    print(classification_report(y_test, y_pred))
-
-    cm = confusion_matrix(y_test, y_pred)
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title(f'Confusion Matrix for {model_name}')
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.show()
+from sklearn.metrics import accuracy_score
 
 if __name__ == "__main__":
-    df = load_data('data/credit_data.csv')
-    X, y = preprocess_data(df)
-    X_train, X_test, y_train, y_test = split_data(X, y)
+    model = joblib.load('models/random_forest_model.pkl')
+    training_columns = joblib.load('models/training_columns.pkl')
 
-    rf_model = joblib.load('models/random_forest_model.pkl')
-    xgb_model = joblib.load('models/xgboost_model.pkl')
+    # Load and preprocess the evaluation dataset
+    df = load_data()
+    X, y = preprocess_data(df, columns_to_keep=training_columns)
 
-    evaluate_model(rf_model, X_test, y_test, 'Random Forest')
-    evaluate_model(xgb_model, X_test, y_test, 'XGBoost')
+    if 'default' not in df.columns:
+        raise KeyError("'default' column not found in the evaluation DataFrame")
+
+    # Predict using the loaded model
+    y_pred = model.predict(X)
+    accuracy = accuracy_score(y, y_pred)
+    print(f"Model accuracy on the evaluation set: {accuracy:.2f}")
+
+
 
